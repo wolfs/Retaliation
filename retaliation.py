@@ -103,11 +103,10 @@ COMMAND_SETS = {
         ("led", 0), # Turn the LED back off
         ("zero", 0), # Park after use for next time
     ),
-    "tom" : (
+    "stefan.wolf" : (
         ("zero", 0), 
-        ("right", 4400),
+        ("left", 4400),
         ("up", 200),
-        ("fire", 4),
         ("zero", 0),
     ),
     "chris" : (      # That's me - just dance around and missfire!
@@ -238,7 +237,7 @@ def run_command(command, value):
     elif command == "zero" or command == "park" or command == "reset":
         # Move to bottom-left
         send_move(DOWN, 2000)
-        send_move(LEFT, 8000)
+        send_move(RIGHT, 8000)
     elif command == "pause" or command == "sleep":
         time.sleep(value / 1000.0)
     elif command == "led":
@@ -317,13 +316,26 @@ def jenkins_wait_for_event():
             notification_data = json.loads(data)
             status = notification_data["build"]["status"].upper()
             phase  = notification_data["build"]["phase"].upper()
-            if phase == "FINISHED" and status.startswith("FAIL"):
-                target = jenkins_get_responsible_user(notification_data["name"])
-                if target == None:
+            print status
+            if status.startswith("UNSTABLE"):
+                print "Build unstable"
+                run_command_set((      # That's me - just dance around and missfire!
+                    ("zero", 0),
+                    ("right", 5200),
+                    ("up", 500),
+                    ("left", 2200),
+                    ("down", 500),
+                    ("zero", 0)))
+            if status.startswith("FAIL"):
+                targets = notification_data["build"]["culprits"]
+                # target = jenkins_get_responsible_user(notification_data["name"])
+                if not targets:
                     print "WARNING: Could not identify the user who broke the build!"
                     continue
 
-                print "Build Failed! Targeting user: " + target
+                print "Build Failed! Targeting users: ", targets
+                for target in targets:
+                    print "Fire at target ", target
                 jenkins_target_user(target)
         except:
             pass
